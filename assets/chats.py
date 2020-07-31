@@ -1,5 +1,3 @@
-from random import choice
-import time
 import os
 
 repos_chats = ["Great, let's move on!", "Nice! Let's proceed, shall we.", "Yay!", "Wohoo! I haven't played in a while.", "Yes! Finally someone who wants to play!", "That's what I'm talking about buddy!"]
@@ -26,7 +24,7 @@ def prologue():
     print("Yo and welcome to play the shittiest hangman game ever made!")
     input()
     os.system("cls")
-    print('"What is the game all about?", ' + "you're wondering.")
+    print('"What is this game all about?", you are asking.')
     input()
     os.system("cls")
     print("Hangman, ofcourse. Can't you read?")
@@ -36,9 +34,6 @@ def prologue():
     input()
     
 def rules():
-    os.system("cls")
-    print(choice(runeg_chats))
-    input()
     os.system("cls")
     print("Okay, anyway. Here are the rules!")
     os.system("cls")
