@@ -17,7 +17,7 @@
     "default_mode": [
         "Okay then. Let's play the default gamemode.",
         "Default mode? Sure!",
-        "That's a good choise!",
+        "That's a good choice!",
         "Default mode is for normies.",
         "Default mode brings back some great memories!"
     ],
@@ -35,10 +35,9 @@
         "Are you religious? haha, just joking."
     ],
     "rules_neg": [
-        "What a fucking retard!",
+        "What a *very mean f word* retard!",
         "Haha, RETARD ALERT!!",
         "How the fuck?",
-        "Please just kill yourself before the society does.",
         "Stoppida!"
     ],
     "replay_pos": [
@@ -49,11 +48,11 @@
         "There is no way you're winning this one."
     ],
     "replay_neg": [
-        "Fuck off then!",
+        "*the f word (please ignore this text)* off then!",
         "Guess there's nothing here then...",
         "If that's the case, you can leave.",
         "Off you go!",
-        "Leave you fagg!"
+        "Leave you homo sexual!"
     ],
     "dont_know": [
         "I am just as clueless as you are.",
@@ -101,13 +100,13 @@
     "blank_input": [
         "Hello imbecile, you're supposed to type something.",
         "Just write something, anything.",
-        "Es päriseaewwaeawdafdddd.",
+        "Es päriseaewwaeawdafdddd... Oh hi, don't mind me; just remember to type something.",
         "Almost!",
         "NANAnnanana!",
         "Hanyah hanyah hanyah!",
         "Not the spacebar!",
         "Don't leave the answer field empty you dummy!",
-        "Dum dum dum dum dum... You dumbfuck!"
+        "Dum dum dum dum dum... You dumb fuck!"
     ],
     "only_letters": [
         "Just guess the letters and numbers!",
@@ -136,7 +135,7 @@
         "Holy moly, I never thought you'd make it this far!",
         "You made it in no time!",
         "Fricky dicky licky... You did it!",
-        "Get fucked game!",
+        "Get fucked, game!",
         "I knew you would make it... oh wait... I didn't.",
         "I'm crazy over you!",
         "Let's connect our cords, shall we.",
@@ -177,7 +176,7 @@
         "Just like in the old days... hehe",
         "What? We have never met before?",
         "In that case, I guess I was just dreaming.",
-        "\"Isn't hanging a bit too much?\", you're asking.",
+        "\"Isn't hanging a bit too much?\", you're wondering.",
         "Ofcourse not. What am I even talking about, you're supposed to know the rules of hangman...",
         "YOU DUMMY!",
         "Okay, let's actually get started before the sleepy sleepy time.",

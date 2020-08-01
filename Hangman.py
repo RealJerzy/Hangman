@@ -18,11 +18,11 @@ window = kernel32.GetConsoleWindow()
 user32.ShowWindow(window, fullscreen)
 
 #Read JSON files
-with open(os.path.join(sys.path[0], "assets/chats.json"), "r") as f:
-  chats = json.loads(f.read())
+with open(os.path.join(sys.path[0], "assets/chats.json"), "r") as file:
+    chats = json.loads(file.read())
 
-with open(os.path.join(sys.path[0], "assets/words.json"), "r") as f:
-  words = json.loads(f.read())
+with open(os.path.join(sys.path[0], "assets/words.json"), "r") as file:
+    words = json.loads(file.read())
 
 categories = []
 
@@ -34,13 +34,13 @@ if len(categories) == 0:
     os._exit(5000)
 
 #GAME -->
-alphabet = "abcdefghijklmnopqrstuvwxyz"
+alphabet = "abcdefghijklmnopqrstuvwxyzåäö"
 numbers = "1234567890"
 specials = "- "
 
-def print_line(s):
+def print_line(text):
     os.system("cls")
-    print(s)
+    print(text)
     input()
 
 for line in chats["prologue"]:
