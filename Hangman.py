@@ -3,10 +3,10 @@
 
 #Imports
 from random import choice
-import assets.chats as chats
-import assets.words as words
 import os
+import sys
 import ctypes
+import json
 
 #Open in fullscreen everytime
 kernel32 = ctypes.WinDLL('kernel32')
@@ -17,12 +17,34 @@ window = kernel32.GetConsoleWindow()
 
 user32.ShowWindow(window, fullscreen)
 
+#Read JSON files
+with open(os.path.join(sys.path[0], "assets/chats.json"), "r") as f:
+  chats = json.loads(f.read())
+
+with open(os.path.join(sys.path[0], "assets/words.json"), "r") as f:
+  words = json.loads(f.read())
+
+categories = []
+
+for c in words["categories"]:
+    categories.append(c)
+
+if len(categories) == 0:
+    print("No categories found in 'words.json'")
+    os._exit(5000)
+
 #GAME -->
 alphabet = "abcdefghijklmnopqrstuvwxyz"
 numbers = "1234567890"
 specials = "- "
 
-chats.prologue()
+def print_line(s):
+    os.system("cls")
+    print(s)
+    input()
+
+for line in chats["prologue"]:
+    print_line(line)
 
 def ready():
     os.system("cls")
@@ -30,19 +52,19 @@ def ready():
     os.system("cls")
 
     if userReady == "no":
-        print(choice(chats.reneg_chats))
+        print(choice(chats["ready_neg"]))
         input()
 
         os._exit(0)
 
     elif userReady == "yes":
-        print(choice(chats.repos_chats))
+        print(choice(chats["ready_pos"]))
         input()
 
         choose_gamemode()
 
     else:
-        print(choice(chats.dunno_chats))
+        print(choice(chats["dont_know"]))
         input()
 
         ready()
@@ -58,7 +80,7 @@ def choose_gamemode():
     global userGamemode
 
     os.system("cls")
-    print("Gamemodes:", "", "1. Default gamemode", "2. Custom gamemode", "", sep="\n")
+    print("Gamemodes:", "", "1. Default", "2. Random category", "", sep="\n")
 
     try:
         userGamemode = int(input("Which gamemode would you like to play? (1-2): "))
@@ -68,16 +90,16 @@ def choose_gamemode():
         invalid()
 
     if userGamemode == 1:
-        print(choice(chats.defmd_chats))
+        print(choice(chats["default_mode"]))
         input()
 
         choose_category()
     
     elif userGamemode == 2:
-        print(choice(chats.cusmd_chats))
+        print(choice(chats["random_mode"]))
         input()
 
-        add_words()
+        choose_random_category()
     
     else:
         invalid()
@@ -86,34 +108,28 @@ def choose_category():
     def invalid():
         os.system("cls")
         print("Invalid input!",
-            "You can choose the category by using the numbers 1-7 on your keyboard.", sep="\n")
+            "You can choose the category by using the numbers 1-" + str(len(categories)) + " on your keyboard.", sep="\n")
         input()
 
         choose_category()
 
-    global userCategory
-
     os.system("cls")
-    print("1. Animals",
-        "2. School subjects",
-        "3. Kitchen",
-        "4. Food",
-        "5. Drinks",
-        "6. Stuff",
-        "7. Random",
-        "", sep="\n")
+    for c in categories:
+        print(str(categories.index(c) + 1) + ". " + c["name"])
 
     try:
-        userCategory = int(input("Which category would like to play? (1-7): "))
+        userCategoryNum = int(input("Which category would like to play? (1-" + str(len(categories)) + "): "))
         os.system("cls")
 
     except ValueError:
         invalid()
 
-    if userCategory >= 1 and userCategory <= 7:
-        userCategory -= 1
+    global userCategory
 
-        print(choice(chats.repos_chats))
+    if userCategoryNum >= 1 and userCategoryNum <= len(categories):
+        userCategory = categories[userCategoryNum - 1]
+
+        print(choice(chats["ready_pos"]))
         input()
 
         rules()
@@ -121,69 +137,10 @@ def choose_category():
     else:
         invalid()
 
-def add_words():
-    os.system("cls")
+def choose_random_category():
 
-    try:
-        i = int(input("How many words would you like to add? (atleast 10): "))
-        os.system("cls")
-
-    except ValueError:
-        os.system("cls")
-        print("Invalid input!", "Please use integers.", sep="\n")
-        input()
-
-        add_words()
-
-    if i < 10:
-        if i == 1:
-            print("1 word is not enough.", "Please add atleast 10 words.", sep="\n")
-
-        else:
-            print(str(i) + " words is not enough.", "Please add atleast 10 words.", sep="\n")
-
-        input()
-
-        add_words()
-
-    else:
-        print("Ok, adding " + str(i) + " words.")
-        input()
-
-    newWord = ""
-    while i > 0:
-        os.system("cls")
-        print("Please add a word now!")
-        newWord = input("").lower()
-        os.system('cls')
-
-        if newWord not in words.custom:
-            for char in newWord:
-                if char not in alphabet and char not in specials and char not in numbers:
-                    print('Invalid input!',
-                        "You're allowed to use letters, numbers, hyphens and spaces!", sep='\n')
-                    input()
-
-                    add_words()
-
-            if len(newWord) > 1:
-                words.custom.append(newWord)
-                i -= 1
-
-                print("You have added " + str(len(words.custom)) + " words!")
-                input()
-
-            else:
-                print("The word has to be atleast 2 characters long.")
-                input()
-
-        else:
-            print("You have already added that word!")
-            input()
-    
-    os.system("cls")
-    print(choice(chats.repos_chats))
-    input()
+    global userCategory
+    userCategory = choice(categories)
 
     rules()
 
@@ -193,7 +150,7 @@ def rules():
     os.system("cls")
 
     if userRules == "yes":
-        print(choice(chats.rupos_chats))
+        print(choice(chats["rules_pos"]))
         input()
 
         os.system("cls")
@@ -203,14 +160,16 @@ def rules():
         play()
 
     elif userRules == "no":
-        print(choice(chats.runeg_chats))
+        print(choice(chats["rules_neg"]))
         input()
 
-        chats.rules()
+        for line in chats["rules"]:
+            print_line(line)
+
         play()
 
     else:
-        print(choice(chats.dunno_chats))
+        print(choice(chats["dont_know"]))
         input()
 
         rules()
@@ -220,7 +179,7 @@ def play():
     guessedWords = []
     attempts = 5
     correct = False
-    word = words.getWord(userGamemode, userCategory)
+    word = choice(userCategory["words"])
         
     while correct == False and attempts > 0:
         show = ""
@@ -244,34 +203,34 @@ def play():
             os.system("cls")
 
             if len(guess) == 0:
-                print(choice(chats.nothg_chats))
+                print(choice(chats["blank_input"]))
                 input()
 
             elif len(guess) == 1:
                 if guess in guessedLetters:
-                    print(choice(chats.gessd_chats))
+                    print(choice(chats["guessed"]))
                     input()
 
                 elif guess not in specials:
                     if guess not in alphabet and guess not in specials and guess not in numbers:
-                        print(choice(chats.noalp_chats))
+                        print(choice(chats["invalid_character"]))
                         input()
 
                     elif guess not in word:
                         guessedLetters.append(guess)
                         attempts -= 1
 
-                        print(choice(chats.wrong_chats))
+                        print(choice(chats["incorrect"]))
                         input()
                     
                     else:
                         guessedLetters.append(guess)
 
-                        print(choice(chats.right_chats))
+                        print(choice(chats["correct"]))
                         input()
 
                 else:
-                    print(choice(chats.onlyl_chats))
+                    print(choice(chats["only_letters"]))
                     input()
 
             elif len(guess) == len(word):
@@ -279,30 +238,30 @@ def play():
                     correct = True
 
                 elif guess in guessedWords:
-                    print(choice(chats.gessd_chats))
+                    print(choice(chats["guessed"]))
                     input()
 
                 else:
                     guessedWords.append(guess)
                     attempts -= 1
 
-                    print(choice(chats.wrong_chats))
+                    print(choice(chats["incorrect"]))
                     input()
 
             else:
-                print(choice(chats.amont_chats))
+                print(choice(chats["wrong_amount"]))
                 input()
     else:
         os.system('cls')
 
         if correct == True:
-            print(choice(chats.winnd_chats))
+            print(choice(chats["won_game"]))
             input()
 
             again()
         
         else:
-            print(choice(chats.loser_chats))
+            print(choice(chats["lost_game"]))
             input()
 
             again()
@@ -313,19 +272,19 @@ def again():
     os.system("cls")
 
     if userAgain == "yes":
-        print(choice(chats.agpos_chats))
+        print(choice(chats["replay_pos"]))
         input()
 
         play()
 
     elif userAgain == "no":
-        print(choice(chats.agneg_chats))
+        print(choice(chats["replay_neg"]))
         input()
 
         os._exit(0)
 
     else:
-        print(choice(chats.dunno_chats))
+        print(choice(chats["dont_know"]))
         input()
 
         again()
