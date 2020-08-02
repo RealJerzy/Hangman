@@ -1,12 +1,9 @@
 # © HankiElama oy
-# Beta Release v1.0.7
+# Beta Release b1.0.10
 
 #Imports
 from random import choice
-import os
-import sys
-import ctypes
-import json
+import os, sys, ctypes, json
 
 #Open in fullscreen everytime
 kernel32 = ctypes.WinDLL('kernel32')
@@ -18,10 +15,10 @@ window = kernel32.GetConsoleWindow()
 user32.ShowWindow(window, fullscreen)
 
 #Read JSON files
-with open(os.path.join(sys.path[0], "assets/chats.json"), "r") as file:
+with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as file:
     chats = json.loads(file.read())
 
-with open(os.path.join(sys.path[0], "assets/words.json"), "r") as file:
+with open(os.path.join(os.getcwd(), "assets/words.json"), "r") as file:
     words = json.loads(file.read())
 
 categories = []
@@ -118,7 +115,7 @@ def choose_category():
         print(str(categories.index(c) + 1) + ". " + c["name"])
 
     try:
-        userCategoryNum = int(input("Which category would like to play? (1-" + str(len(categories)) + "): "))
+        userCategoryNum = int(input("\nWhich category would like to play? (1-" + str(len(categories)) + "): "))
         os.system("cls")
 
     except ValueError:
