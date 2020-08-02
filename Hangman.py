@@ -1,5 +1,5 @@
 # © HankiElama oy
-# Beta Release b1.0.10
+# Beta Release b1.0.11
 
 #Imports
 from random import choice
@@ -15,11 +15,17 @@ window = kernel32.GetConsoleWindow()
 user32.ShowWindow(window, fullscreen)
 
 #Read JSON files
-with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as file:
-    chats = json.loads(file.read())
+try:
+    with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as file:
+        chats = json.loads(file.read())
 
-with open(os.path.join(os.getcwd(), "assets/words.json"), "r") as file:
-    words = json.loads(file.read())
+    with open(os.path.join(os.getcwd(), "assets/words.json"), "r") as file:
+        words = json.loads(file.read())
+
+except FileNotFoundError as missing:
+    print("ERROR: File \"" + missing.filename.split("/")[1] + "\" not found")
+    input()
+    os._exit(0)
 
 categories = []
 
@@ -27,13 +33,24 @@ for c in words["categories"]:
     categories.append(c)
 
 if len(categories) == 0:
-    print("No categories found in 'words.json'")
-    os._exit(5000)
+    print("ERROR: No categories found in 'words.json'")
+    input()
+    os._exit(0)
 
 #GAME -->
 alphabet = "abcdefghijklmnopqrstuvwxyzåäö"
 numbers = "1234567890"
 specials = "- "
+
+def print_random(label):
+    try:
+        os.system('cls')
+        print(choice(chats[label]))
+        input()
+    except KeyError:
+        os.system('cls')
+        print("ERROR: Missing a line in 'chats.json'")
+        input()
 
 def print_line(text):
     os.system("cls")
@@ -46,23 +63,19 @@ for line in chats["prologue"]:
 def ready():
     os.system("cls")
     userReady = input("Are you down to play a game of hangman? (yes/no): ").lower()
-    os.system("cls")
 
     if userReady == "no":
-        print(choice(chats["ready_neg"]))
-        input()
+        print_random("ready_neg")
 
         os._exit(0)
 
     elif userReady == "yes":
-        print(choice(chats["ready_pos"]))
-        input()
+        print_random("ready_pos")
 
         choose_gamemode()
 
     else:
-        print(choice(chats["dont_know"]))
-        input()
+        print_random("dont_know")
 
         ready()
 
@@ -81,20 +94,17 @@ def choose_gamemode():
 
     try:
         userGamemode = int(input("Which gamemode would you like to play? (1-2): "))
-        os.system("cls")
     
     except ValueError:
         invalid()
 
     if userGamemode == 1:
-        print(choice(chats["default_mode"]))
-        input()
+        print_random("default_mode")
 
         choose_category()
     
     elif userGamemode == 2:
-        print(choice(chats["random_mode"]))
-        input()
+        print_random("random_mode")
 
         choose_random_category()
     
@@ -116,7 +126,6 @@ def choose_category():
 
     try:
         userCategoryNum = int(input("\nWhich category would like to play? (1-" + str(len(categories)) + "): "))
-        os.system("cls")
 
     except ValueError:
         invalid()
@@ -126,8 +135,7 @@ def choose_category():
     if userCategoryNum >= 1 and userCategoryNum <= len(categories):
         userCategory = categories[userCategoryNum - 1]
 
-        print(choice(chats["ready_pos"]))
-        input()
+        print_random("ready_pos")
 
         rules()
     
@@ -135,7 +143,6 @@ def choose_category():
         invalid()
 
 def choose_random_category():
-
     global userCategory
     userCategory = choice(categories)
 
@@ -144,11 +151,9 @@ def choose_random_category():
 def rules():
     os.system("cls")
     userRules = input("So, do you know the rules of hangman? (yes/no): ").lower()
-    os.system("cls")
 
     if userRules == "yes":
-        print(choice(chats["rules_pos"]))
-        input()
+        print_random("rules_pos")
 
         os.system("cls")
         print("Here's your first word.")
@@ -157,8 +162,7 @@ def rules():
         play()
 
     elif userRules == "no":
-        print(choice(chats["rules_neg"]))
-        input()
+        print_random("rules_neg")
 
         for line in chats["rules"]:
             print_line(line)
@@ -166,8 +170,7 @@ def rules():
         play()
 
     else:
-        print(choice(chats["dont_know"]))
-        input()
+        print_random("dont_know")
 
         rules()
 
@@ -197,92 +200,74 @@ def play():
             os.system("cls")
             print(show, "You have " + str(attempts) + " tries left.", sep="\n")
             guess = input("Please enter your guess. It can be a character or a full word: ")
-            os.system("cls")
 
             if len(guess) == 0:
-                print(choice(chats["blank_input"]))
-                input()
+                print_random("blank_input")
 
             elif len(guess) == 1:
                 if guess in guessedLetters:
-                    print(choice(chats["guessed"]))
-                    input()
+                    print_random("guessed")
 
                 elif guess not in specials:
                     if guess not in alphabet and guess not in specials and guess not in numbers:
-                        print(choice(chats["invalid_character"]))
-                        input()
+                        print_random("invalid_character")
 
                     elif guess not in word:
                         guessedLetters.append(guess)
                         attempts -= 1
 
-                        print(choice(chats["incorrect"]))
-                        input()
+                        print_random("incorrect")
                     
                     else:
                         guessedLetters.append(guess)
 
-                        print(choice(chats["correct"]))
-                        input()
+                        print_random("correct")
 
                 else:
-                    print(choice(chats["only_letters"]))
-                    input()
+                    print_random("only_letters")
 
             elif len(guess) == len(word):
                 if guess == word:
                     correct = True
 
                 elif guess in guessedWords:
-                    print(choice(chats["guessed"]))
-                    input()
+                    print_random("guessed")
 
                 else:
                     guessedWords.append(guess)
                     attempts -= 1
 
-                    print(choice(chats["incorrect"]))
-                    input()
+                    print_random("incorrect")
 
             else:
-                print(choice(chats["wrong_amount"]))
-                input()
+                print_random("wrong_amount")
     else:
-        os.system('cls')
-
         if correct == True:
-            print(choice(chats["won_game"]))
-            input()
+            print_random("won_game")
 
             again()
         
         else:
-            print(choice(chats["lost_game"]))
-            input()
+            print_random("lost_game")
 
             again()
 
 def again():
     os.system("cls")
     userAgain = input("Would you like to play again? (yes/no): ").lower()
-    os.system("cls")
 
     if userAgain == "yes":
-        print(choice(chats["replay_pos"]))
-        input()
+        print_random("replay_pos")
 
         play()
 
     elif userAgain == "no":
-        print(choice(chats["replay_neg"]))
-        input()
+        print_random("replay_neg")
 
         os._exit(0)
 
     else:
-        print(choice(chats["dont_know"]))
-        input()
+        print_random("dont_know")
 
         again()
 ready()
