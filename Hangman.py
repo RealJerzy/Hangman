@@ -1,5 +1,5 @@
 # © HankiElama oy
-# Beta Release b1.0.11
+# Beta Release b1.0.12
 
 #Imports
 from random import choice
@@ -16,11 +16,23 @@ user32.ShowWindow(window, fullscreen)
 
 #Read JSON files
 try:
-    with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as file:
-        chats = json.loads(file.read())
+    try:
+        with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as file:
+            chats = json.loads(file.read())
 
-    with open(os.path.join(os.getcwd(), "assets/words.json"), "r") as file:
-        words = json.loads(file.read())
+    except json.JSONDecodeError:
+        print("ERROR: Failed to decode file \"chats.json\"")
+        input()
+        os._exit(0)
+
+    try:
+        with open(os.path.join(os.getcwd(), "assets/words.json"), "r") as file:
+            words = json.loads(file.read())
+
+    except json.JSONDecodeError:
+        print("ERROR: Failed to decode file \"words.json\"")
+        input()
+        os._exit(0)
 
 except FileNotFoundError as missing:
     print("ERROR: File \"" + missing.filename.split("/")[1] + "\" not found")
@@ -33,7 +45,7 @@ for c in words["categories"]:
     categories.append(c)
 
 if len(categories) == 0:
-    print("ERROR: No categories found in 'words.json'")
+    print("ERROR: No categories found in \"words.json\"")
     input()
     os._exit(0)
 
@@ -47,18 +59,20 @@ def print_random(label):
         os.system('cls')
         print(choice(chats[label]))
         input()
-    except KeyError:
-        os.system('cls')
-        print("ERROR: Missing a line in 'chats.json'")
-        input()
+    except(KeyError, IndexError):
+        pass
 
 def print_line(text):
     os.system("cls")
     print(text)
     input()
 
-for line in chats["prologue"]:
-    print_line(line)
+try:
+    for line in chats["prologue"]:
+        print_line(line)
+
+except KeyError:
+    pass
 
 def ready():
     os.system("cls")
@@ -164,8 +178,12 @@ def rules():
     elif userRules == "no":
         print_random("rules_neg")
 
-        for line in chats["rules"]:
-            print_line(line)
+        try:
+            for line in chats["rules"]:
+                print_line(line)
+
+        except KeyError:
+            pass
 
         play()
 
