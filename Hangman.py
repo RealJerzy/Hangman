@@ -1,5 +1,4 @@
-# © HankiElama oy
-# Beta Release b1.0.12
+# Pre-release b1.0.15
 
 #Imports
 from random import choice
@@ -20,20 +19,16 @@ try:
         with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as file:
             chats = json.loads(file.read())
 
-    except json.JSONDecodeError:
-        print("ERROR: Failed to decode file \"chats.json\"")
-        input()
-        os._exit(0)
-
-    try:
         with open(os.path.join(os.getcwd(), "assets/words.json"), "r") as file:
             words = json.loads(file.read())
 
+    #If any JSON file is empty:
     except json.JSONDecodeError:
-        print("ERROR: Failed to decode file \"words.json\"")
+        print("ERROR: Failed to decode file \"" + str(file).split('/')[1].split('\'')[0] + "\"")
         input()
         os._exit(0)
 
+#If any JSON file cannot be found:
 except FileNotFoundError as missing:
     print("ERROR: File \"" + missing.filename.split("/")[1] + "\" not found")
     input()
@@ -54,29 +49,56 @@ alphabet = "abcdefghijklmnopqrstuvwxyzåäö"
 numbers = "1234567890"
 specials = "- "
 
+def getUserInput(text):
+    userInput = input(text).lower()
+    
+    if userInput == 'skip':
+        if currentFunction == 'prologue':
+            choose_gamemode()
+        
+        elif currentFunction == 'rules':
+            play()
+    
+    elif userInput == 'quit':
+        os._exit(0)
+
+    elif userInput == 'help':
+        os.system('cls')
+        print('Write "skip" to skip prologue or rules.\nWrite "quit" anytime to quit.')
+        getUserInput('')
+
+    else:
+        pass
+    return userInput
+
 def print_random(label):
     try:
         os.system('cls')
         print(choice(chats[label]))
-        input()
+        getUserInput('')
     except(KeyError, IndexError):
         pass
 
 def print_line(text):
     os.system("cls")
     print(text)
-    input()
+    getUserInput('')
 
-try:
-    for line in chats["prologue"]:
-        print_line(line)
+def prologue():
+    global currentFunction
+    currentFunction = sys._getframe().f_code.co_name
+    try:
+        for line in chats["prologue"]:
+            print_line(line)
 
-except KeyError:
-    pass
+    except KeyError:
+        pass
+
+    ready()
 
 def ready():
     os.system("cls")
-    userReady = input("Are you down to play a game of hangman? (yes/no): ").lower()
+    userReady = getUserInput("Are you down to play a game of hangman? (yes/no): ")
 
     if userReady == "no":
         print_random("ready_neg")
@@ -94,10 +116,12 @@ def ready():
         ready()
 
 def choose_gamemode():
+    global currentFunction
+    currentFunction = sys._getframe().f_code.co_name
     def invalid():
         os.system("cls")
         print("Invalid input!", "You can choose gamemode by typing 1 or 2.", sep="\n")
-        input()
+        getUserInput('')
 
         choose_gamemode()
 
@@ -107,7 +131,7 @@ def choose_gamemode():
     print("Gamemodes:", "", "1. Default", "2. Random category", "", sep="\n")
 
     try:
-        userGamemode = int(input("Which gamemode would you like to play? (1-2): "))
+        userGamemode = int(getUserInput("Which gamemode would you like to play? (1-2): "))
     
     except ValueError:
         invalid()
@@ -126,11 +150,13 @@ def choose_gamemode():
         invalid()
 
 def choose_category():
+    global currentFunction
+    currentFunction = sys._getframe().f_code.co_name
     def invalid():
         os.system("cls")
         print("Invalid input!",
             "You can choose the category by using the numbers 1-" + str(len(categories)) + " on your keyboard.", sep="\n")
-        input()
+        getUserInput('')
 
         choose_category()
 
@@ -139,7 +165,7 @@ def choose_category():
         print(str(categories.index(c) + 1) + ". " + c["name"])
 
     try:
-        userCategoryNum = int(input("\nWhich category would like to play? (1-" + str(len(categories)) + "): "))
+        userCategoryNum = int(getUserInput("\nWhich category would like to play? (1-" + str(len(categories)) + "): "))
 
     except ValueError:
         invalid()
@@ -163,15 +189,18 @@ def choose_random_category():
     rules()
 
 def rules():
+    global currentFunction
+    currentFunction = sys._getframe().f_code.co_name
+
     os.system("cls")
-    userRules = input("So, do you know the rules of hangman? (yes/no): ").lower()
+    userRules = getUserInput("So, do you know the rules of hangman? (yes/no): ")
 
     if userRules == "yes":
         print_random("rules_pos")
 
         os.system("cls")
         print("Here's your first word.")
-        input()
+        getUserInput('')
 
         play()
 
@@ -193,6 +222,8 @@ def rules():
         rules()
 
 def play():
+    global currentFunction
+    currentFunction = sys._getframe().f_code.co_name
     guessedLetters = []
     guessedWords = []
     attempts = 5
@@ -217,7 +248,7 @@ def play():
         else:
             os.system("cls")
             print(show, "You have " + str(attempts) + " tries left.", sep="\n")
-            guess = input("Please enter your guess. It can be a character or a full word: ")
+            guess = getUserInput("Please enter your guess. It can be a character or a full word: ")
 
             if len(guess) == 0:
                 print_random("blank_input")
@@ -262,15 +293,23 @@ def play():
     else:
         if correct == True:
             print_random("won_game")
+            os.system('cls')
+            print('The correct word was "' + word + '".')
+            getUserInput('')
 
             again()
         
         else:
             print_random("lost_game")
+            os.system('cls')
+            print('The correct word would\'ve been "' + word + '".')
+            getUserInput('')
 
             again()
 
 def again():
+    global currentFunction
+    currentFunction = sys._getframe().f_code.co_name
     os.system("cls")
     userAgain = input("Would you like to play again? (yes/no): ").lower()
 
@@ -288,4 +327,5 @@ def again():
         print_random("dont_know")
 
         again()
-ready()
+
+prologue()
