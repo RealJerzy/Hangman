@@ -16,31 +16,30 @@ user32.ShowWindow(window, fullscreen)
 #Read JSON files
 try:
     try:
-        with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as file:
-            chats = json.loads(file.read())
+        with open(os.path.join(os.getcwd(), "assets/chats.json"), "r") as f:
+            chats = json.loads(f.read())
 
-        with open(os.path.join(os.getcwd(), "assets/words.json"), "r") as file:
-            words = json.loads(file.read())
+        categories = []
+
+        for f in os.listdir(os.path.join(os.getcwd(), "assets/categories")):
+            print(f)
+            if f.lower().endswith(".json"):
+                categories.append(json.loads(open(os.path.join(os.getcwd(), "assets/categories", f), "r").read()))
+
+        if len(categories) == 0:
+            print("ERROR: No categories found in \"assets/categories\"")
+            input()
+            os._exit(0)
 
     #If any JSON file is empty:
     except json.JSONDecodeError:
-        print("ERROR: Failed to decode file \"" + str(file).split('/')[1].split('\'')[0] + "\"")
+        print("ERROR: Failed to decode file \"" + str(f).split('/')[1].split('\'')[0] + "\"")
         input()
         os._exit(0)
 
 #If any JSON file cannot be found:
 except FileNotFoundError as missing:
     print("ERROR: File \"" + missing.filename.split("/")[1] + "\" not found")
-    input()
-    os._exit(0)
-
-categories = []
-
-for c in words["categories"]:
-    categories.append(c)
-
-if len(categories) == 0:
-    print("ERROR: No categories found in \"words.json\"")
     input()
     os._exit(0)
 
