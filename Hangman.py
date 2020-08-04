@@ -1,4 +1,4 @@
-# Pre-release b1.0.15
+# Pre-release b1.0.17
 
 #Imports
 from random import choice
@@ -22,9 +22,12 @@ try:
         categories = []
 
         for f in os.listdir(os.path.join(os.getcwd(), "assets/categories")):
-            print(f)
             if f.lower().endswith(".json"):
                 categories.append(json.loads(open(os.path.join(os.getcwd(), "assets/categories", f), "r").read()))
+
+        for c in categories:
+            if len(c["name"]) == 0 or len(c["words"]) == 0:
+                categories.remove(c)
 
         if len(categories) == 0:
             print("ERROR: No categories found in \"assets/categories\"")
@@ -33,7 +36,7 @@ try:
 
     #If any JSON file is empty:
     except json.JSONDecodeError:
-        print("ERROR: Failed to decode file \"" + str(f).split('/')[1].split('\'')[0] + "\"")
+        print("ERROR: Failed to decode file \"" + str(f) + "\"")
         input()
         os._exit(0)
 
