@@ -1,4 +1,4 @@
-# Pre-release b1.0.17
+# Pre-release b1.0.18
 
 #Imports
 from random import choice
@@ -23,11 +23,16 @@ try:
 
         for f in os.listdir(os.path.join(os.getcwd(), "assets/categories")):
             if f.lower().endswith(".json"):
-                categories.append(json.loads(open(os.path.join(os.getcwd(), "assets/categories", f), "r").read()))
+                thisLoad = (json.loads(open(os.path.join(os.getcwd(), "assets/categories", f), "r").read()))
 
-        for c in categories:
-            if len(c["name"]) == 0 or len(c["words"]) == 0:
-                categories.remove(c)
+                #First, check if keys "name" and "words" exist in the current category
+                if "name" in thisLoad and "words" in thisLoad:
+                    #Second, check if either one is empty
+                    if len(thisLoad["name"]) == 0 or len(thisLoad["words"]) == 0:
+                        continue
+
+                    else:
+                        categories.append(thisLoad)
 
         if len(categories) == 0:
             print("ERROR: No categories found in \"assets/categories\"")
