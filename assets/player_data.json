@@ -1,0 +1,42 @@
+{
+    "playerData": {
+        "skips": {
+            "skipIntro": false,
+            "skipRules": false
+        },
+        "statistics": {
+            "roundsPlayed": {
+                "id": "Rounds played",
+                "count": 0
+            },
+            "roundsWon": {
+                "id": "Rounds won",
+                "count": 0
+            },
+            "roundsLost": {
+                "id": "Rounds lost",
+                "count": 0
+            },
+            "guessesMade": {
+                "id": "The amount of guesses",
+                "count": 0
+            },
+            "charactersGuessed": {
+                "id": "Characters guessed",
+                "count": 0
+            },
+            "wordsGuessed": {
+                "id": "Words guessed",
+                "count": 0
+            },
+            "rightGuesses": {
+                "id": "Right guesses",
+                "count": 0
+            },
+            "wrongGuesses": {
+                "id": "Wrong guesses",
+                "count": 0
+            }
+        }
+    }
+}
