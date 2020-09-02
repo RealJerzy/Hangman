@@ -1,387 +1,436 @@
-# Pre-release b1.1.1
+#Pre-release b1.1.8
+
 
 #Imports
 from random import choice
 from ctypes import WinDLL
-import os, sys, json
+from sys import _getframe
+from time import sleep
+from msvcrt import getwche, kbhit
+from json import loads, dump, JSONDecodeError
+from os import system, getcwd, path, listdir, _exit
 
-#Title
-def change_title(title):
-    os.system('title ' + title)
 
-change_title('Hangman')
+#Screen setup
+system("title Hangman")
+system("color 7")
 
-#Open in fullscreen everytime
-kernel32 = WinDLL('kernel32')
-user32 = WinDLL('user32')
+kernel32 = WinDLL("kernel32")
+user32 = WinDLL("user32")
 
 fullscreen = 3
 window = kernel32.GetConsoleWindow()
 
 user32.ShowWindow(window, fullscreen)
 
+
 #Read JSON files
 try:
     try:
-        chats = json.loads(open(os.path.join(os.getcwd(), "assets/chats.json"), "r").read())
-        plData = json.loads(open(os.path.join(os.getcwd(), "assets/player_data.json"), "r").read())
+        chats = loads(open(path.join(getcwd(), "assets/chats.json"), "r").read())
+        plData = loads(open(path.join(getcwd(), "data/player_data.json"), "r").read())
 
         categories = []
-
-        for f in os.listdir(os.path.join(os.getcwd(), "assets/categories")):
+        for f in listdir(path.join(getcwd(), "assets/categories")):
             if f.lower().endswith(".json"):
-                thisLoad = json.loads(open(os.path.join(os.getcwd(), "assets/categories", f), "r").read())
+                thisLoad = loads(open(path.join(getcwd(), "assets/categories", f), "r").read())
 
-                #First, check if keys "name" and "words" exist in the current category
-                if "name" in thisLoad and "words" in thisLoad:
-                    #Second, check if either one is empty
-                    if len(thisLoad["name"]) != 0 or len(thisLoad["words"]) != 0:
+                if ("name" and "words") in thisLoad:
+                    if (len(thisLoad["name"]) or len(thisLoad["words"])) != 0:
                         categories.append(thisLoad)
 
         if len(categories) == 0:
+            system("cls")
             print("ERROR: No categories found in \"assets/categories\"")
             input()
-            os._exit(0)
+            _exit(0)
 
     #If any JSON file is empty:
-    except json.JSONDecodeError:
+    except JSONDecodeError:
+        system("cls")
         print("ERROR: Failed to decode file \"" + str(f) + "\"")
         input()
-        os._exit(0)
+        _exit(0)
 
 #If any JSON file cannot be found:
 except FileNotFoundError as missing:
+    system("cls")
     print("ERROR: File \"" + missing.filename.split("/")[1] + "\" not found")
     input()
-    os._exit(0)
+    _exit(0)
+
 
 #Write JSON files
-data = {}
-data["playerData"] = plData["playerData"]
+def writePlayerData(plData):
+    dump(plData, open(path.join(getcwd(), "data/player_data.json"), "w"), indent = 4)
 
-def writePlayerData(data):
-    json.dump(data, open(os.path.join(os.getcwd(), "assets/player_data.json"), "w"), indent=4)
 
-#GAME -->
-alphabet = "abcdefghijklmnopqrstuvwxyzåäö"
-numbers = "1234567890"
-specials = "- "
+#Statistics
+def print_statistics():
+    out = ""
+    out += "Statistics:\n\n"
+    for i in plData["playerData"]["statistics"]:
+        out += plData["playerData"]["statistics"][i]["id"] + ":\n"
+        out += 5 * " " + str(plData["playerData"]["statistics"][i]["count"]) + "\n"
 
-def getUserInput(text):
+    print_line(out, None, None, None)
+
+
+#Resetting
+def reset(target):
+    while True:
+        if target == "Statistics":
+            userReset = print_line("You are about to reset " + target
+                                    + "!\nThis action can't be reverted!\nAre you sure?"
+                                    , None, 4, 0.2)
+
+            if userReset in ["yes", "y"]:
+                for d in plData["playerData"]["statistics"]:
+                    plData["playerData"]["statistics"][d]["count"] = 0
+
+            elif userReset in ["no", "n"]:
+                print_line("The reset has been cancelled.", None, None, None)
+                break
+        
+            else:
+                print_line("It's a freaking yes/no question! Lights on dummy fricky.", None, None, None)
+                continue
+
+        else:
+            for d in plData["playerData"]["skips"]:
+                plData["playerData"]["skips"][d] = False
+
+        writePlayerData(plData)
+        print_line(str(target) + " have been reset succesfully. ", None, None, None)
+        break
+
+
+#User input
+def get_user_input(text):
+    global commands
+    commands = ["skip", "skip intro forever", "stats", "reset stats", "reset skips", "quit", "help"]
+
     userInput = input(text).lower()
-    
-    if userInput == 'skip':
-        if currentFunction == 'prologue':
+    if userInput == "skip":
+        if currentFunction == "prologue":
             choose_gamemode()
         
-        elif currentFunction == 'rules':
+        elif currentFunction == "rules":
             play()
-    
-    elif userInput == 'skip intro forever':
-        data['playerData']["skips"]["skipIntro"] = True
-        writePlayerData(data)
-        
-        if currentFunction == 'prologue':
-            choose_gamemode()
 
-    elif userInput == 'statistics':
+    elif userInput == "skip intro forever":
+        plData["playerData"]["skips"]["skipIntro"] = True
+        writePlayerData(plData)
+        
+        if currentFunction == "prologue":
+            choose_gamemode()
+            
+    elif userInput == "stats":
         print_statistics()
 
-    elif userInput == 'quit':
-        os._exit(0)
+    elif userInput == "reset stats":
+        reset("Statistics")
 
-    elif userInput == 'help':
-        os.system('cls')
-        print('Write "skip" to skip prologue or rules.\nWrite "skip intro forever" to skip the intro forever.\nWrite "statistics" to read your game statistics\nWrite "quit" anytime to quit.')
-        getUserInput('')
+    elif userInput == "reset skips":
+        reset("Skips")
+
+    elif userInput == "quit":
+        _exit(0)
+
+    elif userInput == "help":
+        print_line("Write \"skip\" to skip prologue or rules.\nWrite \"skip intro forever\" to skip the intro forever.\nWrite \"statistics\" to read your game statistics\nWrite \"quit\" anytime to quit.", None, None, None)
 
     return userInput
 
-def print_random(label):
-    try:
-        os.system('cls')
-        print(choice(chats[label]))
-        getUserInput('')
-    except(KeyError, IndexError):
-        pass
 
-def print_line(text):
-    os.system("cls")
-    print(text)
-    getUserInput('')
+#Printing
+def print_line(text, random, color, delay):
+    if text != None:
+        while True:
+            system("cls")
+            print(text)
 
-def print_statistics():
-    os.system('cls')
-    print('Statistics:\n')
+            if color != None:
+                while True:
+                    system("color 7")
+                    sleep(delay)
+                    system("color " + str(color))
+                    sleep(delay)
 
-    for i in plData["playerData"]["statistics"]:
-        print(plData["playerData"]["statistics"][i]["id"] + ':')
-        print('     ' + str(plData["playerData"]["statistics"][i]["count"]))
+                    if kbhit():
+                        system("color 7")
+                        break
+        
+            temporary = get_user_input("")
+            if temporary not in commands:
+                return temporary
 
-    getUserInput('')
+    elif random != None:
+        try:
+            print_line(choice(chats[random]), None, color, delay)
 
+        except(KeyError, IndexError):
+            pass
+
+
+#GAME -->
 def prologue():
     global currentFunction
-    currentFunction = sys._getframe().f_code.co_name
+    currentFunction = _getframe().f_code.co_name
 
     if plData["playerData"]["skips"]["skipIntro"] == False:
         try:
             for line in chats["prologue"]:
-                print_line(line)
+                print_line(line, None, None, None)
 
         except KeyError:
             pass
 
         while True:
-            os.system("cls")
-            userReady = getUserInput("Are you down to play a game of hangman? (yes/no): ")
+            printInput = print_line("Are you down to play a game of hangman? (yes/no): ", None, None, None)
 
-            if userReady == "no":
-                print_random("ready_neg")
+            if printInput in ["no", "n"]:
+                print_line(None, "ready_neg", None, None)
+                _exit(0)
 
-                os._exit(0)
-
-            elif userReady == "yes":
-                print_random("ready_pos")
+            elif printInput in ["yes", "y"]:
+                print_line(None, "ready_pos", None, None)
                 break
 
             else:
-                print_random("dont_know")
+                print_line(None, "dont_know", None, None)
                 
     choose_gamemode()
 
+
+def invalid(target, num1, num2):
+    print_line("Invalid input!\nYou can choose the " + target
+                + " by typing any number between " + str(num1)
+                + " and " + str(num2) + ".", None, None, None)
+
+    if target == "gamemode":
+        choose_gamemode()
+    
+    else:
+        choose_category()
+
+
 def choose_gamemode():
     global currentFunction
-    currentFunction = sys._getframe().f_code.co_name
-    def invalid():
-        os.system("cls")
-        print("Invalid input!", "You can choose gamemode by typing 1 or 2.", sep="\n")
-        getUserInput('')
-
-        choose_gamemode()
-
-    global userGamemode
-
-    os.system("cls")
-    print("Gamemodes:", "", "1. Default", "2. Random category", "", sep="\n")
+    currentFunction = _getframe().f_code.co_name
 
     try:
-        userGamemode = int(getUserInput("Which gamemode would you like to play? (1-2): "))
+        global userGamemode
+        userGamemode = int(print_line("Gamemodes:\n\n1. Default\n2. Random category\n\nWhich gamemode would you like to play? (1-2): ", None, None, None))
     
     except ValueError:
-        invalid()
+        invalid("gamemode", 1, 2)
 
     if userGamemode == 1:
-        print_random("default_mode")
+        print_line(None, "default_mode", None, None)
 
         choose_category()
     
     elif userGamemode == 2:
-        print_random("random_mode")
+        print_line(None, "random_mode", None, None)
 
-        choose_random_category()
+        random_category()
     
     else:
-        invalid()
+        invalid("gamemode", 1, 2)
+
 
 def choose_category():
     global currentFunction
-    currentFunction = sys._getframe().f_code.co_name
-    def invalid():
-        os.system("cls")
-        print("Invalid input!",
-            "You can choose the category by using the numbers 1-" + str(len(categories)) + " on your keyboard.", sep="\n")
-        getUserInput('')
+    currentFunction = _getframe().f_code.co_name
 
-        choose_category()
-
-    os.system("cls")
+    system("cls")
     for c in categories:
         print(str(categories.index(c) + 1) + ". " + c["name"])
 
     try:
-        userCategoryNum = int(getUserInput("\nWhich category would like to play? (1-" + str(len(categories)) + "): "))
+        userCategoryNum = int(get_user_input("\nWhich category would like to play? (1-" + str(len(categories)) + "): "))
 
     except ValueError:
-        invalid()
+        invalid("category", 1, len(categories))
 
     global userCategory
-
     if userCategoryNum >= 1 and userCategoryNum <= len(categories):
         userCategory = categories[userCategoryNum - 1]
 
-        print_random("ready_pos")
-
+        print_line(None, "ready_pos", None, None)
         rules()
     
     else:
-        invalid()
+        invalid("category", 1, len(categories))
 
-def choose_random_category():
+
+def random_category():
     global userCategory
     userCategory = choice(categories)
 
     rules()
 
+
 def rules():
     global currentFunction
-    currentFunction = sys._getframe().f_code.co_name
+    currentFunction = _getframe().f_code.co_name
 
     if plData["playerData"]["skips"]["skipRules"] == False:
-        os.system("cls")
-        userRules = getUserInput("So, do you know the rules of hangman? (yes/no): ")
+        userRules = print_line("So, do you know the rules of hangman? (yes/no): ", None, None, None)
 
-        if userRules == "yes":
-            print_random("rules_pos")
+        if userRules in ["yes", "y"]:
+            print_line(None, "rules_pos", None, None)
 
-            os.system("cls")
-            print("Here's your first word.")
-            getUserInput('')
+            print_line("Here's your first word.", None, None, None)
 
-        elif userRules == "no":
-            print_random("rules_neg")
+        elif userRules in ["no", "n"]:
+            print_line(None, "rules_neg", None, None)
 
             try:
                 for line in chats["rules"]:
-                    print_line(line)
+                    print_line(line, None, None, None)
 
             except KeyError:
                 pass
 
         else:
-            print_random("dont_know")
+            print_line(None, "dont_know", None, None)
 
             rules()
 
-        data['playerData']["skips"]["skipRules"] = True
-        writePlayerData(data)
+        plData["playerData"]["skips"]["skipRules"] = True
+        writePlayerData(plData)
     
     play()
 
+
 def play():
     global currentFunction
-    currentFunction = sys._getframe().f_code.co_name
+    currentFunction = _getframe().f_code.co_name
     guessedLetters = []
     guessedWords = []
     attempts = 5
     correct = False
+    primaryDelay = 0.2
+    secondaryDelay = 0.4
     word = choice(userCategory["words"])
-        
+
     while correct == False and attempts > 0:
-        show = ""
         current = ""
 
-        for char in word:
-            if char == " " or char == "-" or char in guessedLetters:
+        for i, char in enumerate(word.lower(), 0):
+            if char in guessedLetters or (char.isdigit() or char.isalpha() == False) :
+                if char in guessedLetters:
+                    if word[i].isupper():
+                        current += char.upper()
+                        continue
+
                 current += char
             else:
-                current += '_'
-
-        show = ' '.join(current)
+                current += "_"
 
         if current == word:
             correct = True
         
         else:
-            os.system("cls")
-            print(show, "You have " + str(attempts) + " tries left.", sep="\n")
-            guess = getUserInput("Please enter your guess. It can be a character or a full word: ")
+            current = " ".join(current)
+
+            guess = print_line(current + "\nYou have " + str(attempts) 
+                                + " tries left.\nPlease enter your guess. It can be a character or a full word: "
+                                , None, None, None)
 
             if len(guess) == 0:
-                print_random("blank_input")
+                print_line(None, "blank_input", 6, secondaryDelay)
 
             elif len(guess) == 1:
                 if guess in guessedLetters:
-                    print_random("guessed")
+                    print_line(None, "guessed", 6, secondaryDelay)
 
-                elif guess not in specials:
-                    if guess not in alphabet and guess not in specials and guess not in numbers:
-                        print_random("invalid_character")
+                elif guess.isdigit() or guess.isalpha():
+                    if guess not in word.lower():
+                        plData["playerData"]["statistics"]["wrongGuesses"]["count"] += 1
+                        guessedLetters.append(guess)
+                        attempts -= 1
 
+                        print_line(None, "incorrect", 4, primaryDelay)
+                    
                     else:
-                        if guess not in word:
-                            data["playerData"]["statistics"]["wrongGuesses"]["count"] += 1
-                            guessedLetters.append(guess)
-                            attempts -= 1
+                        plData["playerData"]["statistics"]["rightGuesses"]["count"] += 1
+                        guessedLetters.append(guess)
 
-                            print_random("incorrect")
-                        
-                        else:
-                            data["playerData"]["statistics"]["rightGuesses"]["count"] += 1
-                            guessedLetters.append(guess)
+                        print_line(None, "correct", "A", primaryDelay)
 
-                            print_random("correct")
-
-                        data["playerData"]["statistics"]["guessesMade"]["count"] += 1
-                        data["playerData"]["statistics"]["charactersGuessed"]["count"] += 1
-                        writePlayerData(data)
+                    plData["playerData"]["statistics"]["guessesMade"]["count"] += 1
+                    plData["playerData"]["statistics"]["charactersGuessed"]["count"] += 1
+                    writePlayerData(plData)
 
                 else:
-                    print_random("only_letters")
+                    print_line(None, "only_letters", 6, secondaryDelay)
 
             elif len(guess) == len(word):
                 if guess in guessedWords:
-                    print_random("guessed")
+                    print_line(None, "guessed", 6, secondaryDelay)
 
                 else:
-                    if guess == word:
-                        data["playerData"]["statistics"]["rightGuesses"]["count"] += 1
+                    if guess == word.lower():
+                        plData["playerData"]["statistics"]["rightGuesses"]["count"] += 1
                         correct = True
+
+                        print_line(None, "correct", "A", primaryDelay)
                         
                     else:
-                        data["playerData"]["statistics"]["wrongGuesses"]["count"] += 1
+                        plData["playerData"]["statistics"]["wrongGuesses"]["count"] += 1
                         guessedWords.append(guess)
                         attempts -= 1
 
-                        print_random("incorrect")
+                        print_line(None, "incorrect", 4, primaryDelay)
                 
-                    data["playerData"]["statistics"]["guessesMade"]["count"] += 1
-                    data["playerData"]["statistics"]["wordsGuessed"]["count"] += 1
-                    writePlayerData(data)
+                    plData["playerData"]["statistics"]["guessesMade"]["count"] += 1
+                    plData["playerData"]["statistics"]["wordsGuessed"]["count"] += 1
+                    writePlayerData(plData)
 
             else:
-                print_random("wrong_amount")
+                print_line(None, "wrong_amount", 6, secondaryDelay)
     else:
         if correct == True:
-            data["playerData"]["statistics"]["roundsWon"]["count"] += 1
+            plData["playerData"]["statistics"]["roundsWon"]["count"] += 1
 
-            print_random("won_game")
-            os.system('cls')
-            print('The correct word was "' + word + '".')
+            print_line(None, "won_game", None, None)
+            print_line("The correct word was \"" + word + "\".", None, None, None)
         
         else:
-            data["playerData"]["statistics"]["roundsLost"]["count"] += 1
+            plData["playerData"]["statistics"]["roundsLost"]["count"] += 1
 
-            print_random("lost_game")
-            os.system('cls')
-            print('The correct word would\'ve been "' + word + '".')
+            print_line(None, "lost_game", None, None)
+            print_line("The correct word would\'ve been \"" + word + "\".", None, None, None)
 
-        data["playerData"]["statistics"]["roundsPlayed"]["count"] += 1
-        writePlayerData(data)
+        plData["playerData"]["statistics"]["roundsPlayed"]["count"] += 1
+        writePlayerData(plData)
 
-        getUserInput('')
+        replay()
 
-        again()
 
-def again():
+def replay():
     global currentFunction
-    currentFunction = sys._getframe().f_code.co_name
-    os.system("cls")
-    userAgain = input("Would you like to play again? (yes/no): ").lower()
+    currentFunction = _getframe().f_code.co_name
 
-    if userAgain == "yes":
-        print_random("replay_pos")
+    userReplay = print_line("Would you like to play again? (yes/no): ", None, None, None)
+
+    if userReplay in ["yes", "y"]:
+        print_line(None, "replay_pos", None, None)
 
         play()
 
-    elif userAgain == "no":
-        print_random("replay_neg")
+    elif userReplay in ["no", "n"]:
+        print_line(None, "replay_neg", None, None)
 
-        os._exit(0)
+        _exit(0)
 
     else:
-        print_random("dont_know")
+        print_line(None, "dont_know", None, None)
 
-        again()
+        replay()
+
 
 prologue()
