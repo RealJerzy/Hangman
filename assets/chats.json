@@ -45,8 +45,8 @@
         "Pregant, pragnent, pargant, gregnant, pegnate, pegrent, pregegant, pregonate, prengan, prregnant, \npregante, pergert, pegnat, pragnet, pergenat, prangnet, pragnan, pregnart, bregant, pregarnt, \npregat, fregnant, pargnet, peegnant, pergnut, pgrenant, praganant, prangent, prefnat, pregananant, \npregernet, prengt, prognant, pretnet "
     ],
     "rules_neg": [
-        "What a *very mean f word* retard! ",
-        "Haha, RETARD ALERT!! ",
+        "What a *very mean f word* dummy! ",
+        "Haha, DUMMY ALERT!! ",
         "How the fuck? ",
         "Stoppida! ",
         "Didn't know that's even possible. ",
@@ -211,7 +211,6 @@
         "\"Isn't hanging a bit too much?\", you're wondering.",
         "Ofcourse not. What am I even talking about, you're supposed to know the rules of hangman...",
         "YOU DUMMY!",
-        "Okay, let's actually get started before the sleepy sleepy time.",
-        "Here's you first word"
+        "Okay, let's actually get started before the sleepy sleepy time."
     ]
 }

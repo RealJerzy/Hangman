@@ -1,436 +1,364 @@
-#Pre-release b1.1.8
+__version__ = 'Pre-release b1.2.0'
+__author__ = 'RealJerzy'
 
+import random
+import time
+import msvcrt
+import os
+import json_managing as jsm
+from json_managing import JsonManagement
 
-#Imports
-from random import choice
-from ctypes import WinDLL
-from sys import _getframe
-from time import sleep
-from msvcrt import getwche, kbhit
-from json import loads, dump, JSONDecodeError
-from os import system, getcwd, path, listdir, _exit
+os.system('title Hangman')
+os.system('color 7')
+jsm = JsonManagement()
+CURRENT_FUNCTION = ''
 
-
-#Screen setup
-system("title Hangman")
-system("color 7")
-
-kernel32 = WinDLL("kernel32")
-user32 = WinDLL("user32")
-
-fullscreen = 3
-window = kernel32.GetConsoleWindow()
-
-user32.ShowWindow(window, fullscreen)
-
-
-#Read JSON files
-try:
-    try:
-        chats = loads(open(path.join(getcwd(), "assets/chats.json"), "r").read())
-        plData = loads(open(path.join(getcwd(), "data/player_data.json"), "r").read())
-
-        categories = []
-        for f in listdir(path.join(getcwd(), "assets/categories")):
-            if f.lower().endswith(".json"):
-                thisLoad = loads(open(path.join(getcwd(), "assets/categories", f), "r").read())
-
-                if ("name" and "words") in thisLoad:
-                    if (len(thisLoad["name"]) or len(thisLoad["words"])) != 0:
-                        categories.append(thisLoad)
-
-        if len(categories) == 0:
-            system("cls")
-            print("ERROR: No categories found in \"assets/categories\"")
-            input()
-            _exit(0)
-
-    #If any JSON file is empty:
-    except JSONDecodeError:
-        system("cls")
-        print("ERROR: Failed to decode file \"" + str(f) + "\"")
-        input()
-        _exit(0)
-
-#If any JSON file cannot be found:
-except FileNotFoundError as missing:
-    system("cls")
-    print("ERROR: File \"" + missing.filename.split("/")[1] + "\" not found")
-    input()
-    _exit(0)
-
-
-#Write JSON files
-def writePlayerData(plData):
-    dump(plData, open(path.join(getcwd(), "data/player_data.json"), "w"), indent = 4)
-
-
-#Statistics
 def print_statistics():
-    out = ""
-    out += "Statistics:\n\n"
-    for i in plData["playerData"]["statistics"]:
-        out += plData["playerData"]["statistics"][i]["id"] + ":\n"
-        out += 5 * " " + str(plData["playerData"]["statistics"][i]["count"]) + "\n"
-
+    out = 'Statistics:\n\n'
+    min_length = 0
+    for k, value in jsm.player_data['statistics'].items():
+        if len(value['id']) > min_length:
+            min_length = len(value['id'])
+    for i in jsm.player_data['statistics']:
+        current_stat = jsm.player_data['statistics'][i]['id']
+        out += (
+            current_stat
+            + ': '
+            + (min_length - len(current_stat)) * ' '
+            + str(jsm.player_data['statistics'][i]['count'])
+            + '\n'
+        )
     print_line(out, None, None, None)
 
 
-#Resetting
 def reset(target):
     while True:
-        if target == "Statistics":
-            userReset = print_line("You are about to reset " + target
-                                    + "!\nThis action can't be reverted!\nAre you sure?"
-                                    , None, 4, 0.2)
-
-            if userReset in ["yes", "y"]:
-                for d in plData["playerData"]["statistics"]:
-                    plData["playerData"]["statistics"][d]["count"] = 0
-
-            elif userReset in ["no", "n"]:
-                print_line("The reset has been cancelled.", None, None, None)
+        if target == 'Statistics':
+            user_reset = print_line(
+                'You are about to reset '
+                + target
+                + '!\nThis action cannot be reverted!\nAre you sure?',
+                None,
+                4,
+                0.2,
+            )
+            if user_reset in ['yes', 'y']:
+                for stat in jsm.player_data['statistics']:
+                    jsm.player_data['statistics'][stat]['count'] = 0
+            elif user_reset in ['no', 'n']:
+                print_line('The reset has been cancelled.', None, None, None)
                 break
-        
             else:
-                print_line("It's a freaking yes/no question! Lights on dummy fricky.", None, None, None)
+                print_line(
+                    'It\'s a freaking yes/no question! Lights on dummy fricky.',
+                    None,
+                    None,
+                    None,
+                )
                 continue
-
         else:
-            for d in plData["playerData"]["skips"]:
-                plData["playerData"]["skips"][d] = False
-
-        writePlayerData(plData)
-        print_line(str(target) + " have been reset succesfully. ", None, None, None)
+            jsm.player_data['skips'] = {
+                skip: False for skip in jsm.player_data['skips']
+            }
+        jsm.write_json(jsm.player_data)
+        print_line(str(target) + ' have been reset succesfully. ', None, None, None)
         break
 
 
-#User input
 def get_user_input(text):
-    global commands
-    commands = ["skip", "skip intro forever", "stats", "reset stats", "reset skips", "quit", "help"]
-
-    userInput = input(text).lower()
-    if userInput == "skip":
-        if currentFunction == "prologue":
-            choose_gamemode()
-        
-        elif currentFunction == "rules":
-            play()
-
-    elif userInput == "skip intro forever":
-        plData["playerData"]["skips"]["skipIntro"] = True
-        writePlayerData(plData)
-        
-        if currentFunction == "prologue":
-            choose_gamemode()
-            
-    elif userInput == "stats":
+    user_input = input(text).lower()
+    if user_input == 'skip':
+        jsm.player_data['skips']['skipIntro'] = True
+        jsm.write_json(jsm.player_data)
+        if CURRENT_FUNCTION == 'prologue':
+            rules()
+    elif user_input == 'stats':
         print_statistics()
+    elif user_input == 'reset stats':
+        reset('Statistics')
+    elif user_input == 'reset skips':
+        reset('Skips')
+    elif user_input == 'quit':
+        exit()
+    elif user_input == 'help':
+        print_line(
+            'Write \'skip\' to skip and never see intro again.\n'
+            + 'Write \'statistics\' to read your game statistics\n'
+            + 'Write \'quit\' anytime to quit.',
+            None,
+            None,
+            None,
+        )
+    return user_input
 
-    elif userInput == "reset stats":
-        reset("Statistics")
 
-    elif userInput == "reset skips":
-        reset("Skips")
-
-    elif userInput == "quit":
-        _exit(0)
-
-    elif userInput == "help":
-        print_line("Write \"skip\" to skip prologue or rules.\nWrite \"skip intro forever\" to skip the intro forever.\nWrite \"statistics\" to read your game statistics\nWrite \"quit\" anytime to quit.", None, None, None)
-
-    return userInput
-
-
-#Printing
-def print_line(text, random, color, delay):
-    if text != None:
+def print_line(text, random_category, color, delay):
+    if text is not None:
         while True:
-            system("cls")
+            os.system('cls')
             print(text)
-
-            if color != None:
+            if color is not None:
                 while True:
-                    system("color 7")
-                    sleep(delay)
-                    system("color " + str(color))
-                    sleep(delay)
-
-                    if kbhit():
-                        system("color 7")
+                    os.system('color 7')
+                    time.sleep(delay)
+                    os.system('color ' + str(color))
+                    time.sleep(delay)
+                    if msvcrt.kbhit():
+                        os.system('color 7')
                         break
-        
-            temporary = get_user_input("")
-            if temporary not in commands:
-                return temporary
-
-    elif random != None:
+            return get_user_input('')
+    elif random_category is not None:
         try:
-            print_line(choice(chats[random]), None, color, delay)
-
-        except(KeyError, IndexError):
+            print_line(
+                random.choice(jsm.chats[random_category]),
+                None,
+                color,
+                delay
+            )
+        except (KeyError, IndexError):
             pass
-
-
-#GAME -->
-def prologue():
-    global currentFunction
-    currentFunction = _getframe().f_code.co_name
-
-    if plData["playerData"]["skips"]["skipIntro"] == False:
-        try:
-            for line in chats["prologue"]:
-                print_line(line, None, None, None)
-
-        except KeyError:
-            pass
-
-        while True:
-            printInput = print_line("Are you down to play a game of hangman? (yes/no): ", None, None, None)
-
-            if printInput in ["no", "n"]:
-                print_line(None, "ready_neg", None, None)
-                _exit(0)
-
-            elif printInput in ["yes", "y"]:
-                print_line(None, "ready_pos", None, None)
-                break
-
-            else:
-                print_line(None, "dont_know", None, None)
-                
-    choose_gamemode()
 
 
 def invalid(target, num1, num2):
-    print_line("Invalid input!\nYou can choose the " + target
-                + " by typing any number between " + str(num1)
-                + " and " + str(num2) + ".", None, None, None)
-
-    if target == "gamemode":
+    print_line(
+        'Invalid input!\nYou can choose the '
+        + target
+        + ' by typing any number between '
+        + str(num1)
+        + ' and '
+        + str(num2)
+        + '.',
+        None,
+        None,
+        None,
+    )
+    if target == 'gamemode':
         choose_gamemode()
-    
     else:
         choose_category()
 
 
-def choose_gamemode():
-    global currentFunction
-    currentFunction = _getframe().f_code.co_name
-
-    try:
-        global userGamemode
-        userGamemode = int(print_line("Gamemodes:\n\n1. Default\n2. Random category\n\nWhich gamemode would you like to play? (1-2): ", None, None, None))
-    
-    except ValueError:
-        invalid("gamemode", 1, 2)
-
-    if userGamemode == 1:
-        print_line(None, "default_mode", None, None)
-
-        choose_category()
-    
-    elif userGamemode == 2:
-        print_line(None, "random_mode", None, None)
-
-        random_category()
-    
-    else:
-        invalid("gamemode", 1, 2)
-
-
-def choose_category():
-    global currentFunction
-    currentFunction = _getframe().f_code.co_name
-
-    system("cls")
-    for c in categories:
-        print(str(categories.index(c) + 1) + ". " + c["name"])
-
-    try:
-        userCategoryNum = int(get_user_input("\nWhich category would like to play? (1-" + str(len(categories)) + "): "))
-
-    except ValueError:
-        invalid("category", 1, len(categories))
-
-    global userCategory
-    if userCategoryNum >= 1 and userCategoryNum <= len(categories):
-        userCategory = categories[userCategoryNum - 1]
-
-        print_line(None, "ready_pos", None, None)
-        rules()
-    
-    else:
-        invalid("category", 1, len(categories))
-
-
-def random_category():
-    global userCategory
-    userCategory = choice(categories)
-
+def prologue():
+    global CURRENT_FUNCTION
+    CURRENT_FUNCTION = 'prologue'
+    if jsm.player_data['skips']['skipIntro'] is False:
+        try:
+            for line in jsm.chats['prologue']:
+                print_line(line, None, None, None)
+        except KeyError:
+            pass
+        while True:
+            print_input = print_line(
+                'Are you down to play a game of hangman? (yes/no): ',
+                None,
+                None,
+                None
+            )
+            if print_input in ['no', 'n']:
+                print_line(None, 'ready_neg', None, None)
+                exit()
+            elif print_input in ['yes', 'y']:
+                print_line(None, 'ready_pos', None, None)
+                break
+            else:
+                print_line(None, 'dont_know', None, None)
     rules()
 
 
 def rules():
-    global currentFunction
-    currentFunction = _getframe().f_code.co_name
-
-    if plData["playerData"]["skips"]["skipRules"] == False:
-        userRules = print_line("So, do you know the rules of hangman? (yes/no): ", None, None, None)
-
-        if userRules in ["yes", "y"]:
-            print_line(None, "rules_pos", None, None)
-
-            print_line("Here's your first word.", None, None, None)
-
-        elif userRules in ["no", "n"]:
-            print_line(None, "rules_neg", None, None)
-
+    if jsm.player_data['skips']['skipRules'] is False:
+        user_rules = print_line(
+            'So, do you know the rules of hangman? (yes/no): ',
+            None,
+            None,
+            None
+        )
+        if user_rules in ['yes', 'y']:
+            print_line(None, 'rules_pos', None, None)
+            jsm.player_data['skips']['skipRules'] = True
+            jsm.write_json(jsm.player_data)
+        elif user_rules in ['no', 'n']:
+            print_line(None, 'rules_neg', None, None)
             try:
-                for line in chats["rules"]:
+                for line in jsm.chats['rules']:
                     print_line(line, None, None, None)
-
             except KeyError:
                 pass
-
         else:
-            print_line(None, "dont_know", None, None)
-
+            print_line(None, 'dont_know', None, None)
             rules()
-
-        plData["playerData"]["skips"]["skipRules"] = True
-        writePlayerData(plData)
-    
-    play()
+    choose_gamemode()
 
 
-def play():
-    global currentFunction
-    currentFunction = _getframe().f_code.co_name
-    guessedLetters = []
-    guessedWords = []
+def choose_gamemode():
+    global CURRENT_FUNCTION
+    CURRENT_FUNCTION = 'choose_gamemode'
+    try:
+        user_gamemode = int(
+            print_line(
+                'Gamemodes:\n\n1. Default\n'
+                + '2. Random category\n\n'
+                + 'Which gamemode would you like to play? (1-2): ',
+                None,
+                None,
+                None,
+            )
+        )
+    except ValueError:
+        invalid('gamemode', 1, 2)
+    if user_gamemode == 1:
+        print_line(None, 'default_mode', None, None)
+        choose_category()
+    elif user_gamemode == 2:
+        print_line(None, 'random_mode', None, None)
+        user_gamemode = random.choice(jsm.categories)
+    else:
+        invalid('gamemode', 1, 2)
+
+
+def choose_category():
+    os.system('cls')
+    for category in jsm.categories:
+        print(
+            str(jsm.categories.index(category) + 1)
+            + '. '
+            + category['name']
+        )
+    try:
+        user_category_num = int(
+            print_line(
+                (
+                    '\nWhich category would like to play? (1-'
+                    + str(len(jsm.categories))
+                    + '): '
+                ),
+                None,
+                None,
+                None,
+            )
+        )
+    except ValueError:
+        invalid('category', 1, len(jsm.categories))
+    if user_category_num < 1 or user_category_num > len(jsm.categories):
+        invalid('category', 1, len(jsm.categories))
+    user_category = jsm.categories[user_category_num - 1]
+    print_line(None, 'ready_pos', None, None)
+    print_line('Here\'s your first word.', None, None, None)
+    play(user_category)
+
+
+def play(user_gamemode):
+    guessed_letters = []
+    guessed_words = []
     attempts = 5
     correct = False
-    primaryDelay = 0.2
-    secondaryDelay = 0.4
-    word = choice(userCategory["words"])
-
-    while correct == False and attempts > 0:
-        current = ""
-
+    primary_delay = 0.2
+    secondary_delay = 0.4
+    word = random.choice(user_gamemode['words'])
+    while correct is False and attempts > 0:
+        current = ''
         for i, char in enumerate(word.lower(), 0):
-            if char in guessedLetters or (char.isdigit() or char.isalpha() == False) :
-                if char in guessedLetters:
-                    if word[i].isupper():
-                        current += char.upper()
-                        continue
-
+            if char in guessed_letters or (char.isdigit() or not char.isalpha()):
+                if char in guessed_letters and word[i].isupper():
+                    current += char.upper()
+                    continue
                 current += char
             else:
-                current += "_"
-
+                current += '_'
         if current == word:
             correct = True
-        
         else:
-            current = " ".join(current)
-
-            guess = print_line(current + "\nYou have " + str(attempts) 
-                                + " tries left.\nPlease enter your guess. It can be a character or a full word: "
-                                , None, None, None)
-
-            if len(guess) == 0:
-                print_line(None, "blank_input", 6, secondaryDelay)
-
+            current = ' '.join(current)
+            guess = print_line(
+                current
+                + '\nYou have '
+                + str(attempts)
+                + ' tries left.\nPlease enter your guess. It can be a character or a full word: ',
+                None,
+                None,
+                None,
+            )
+            if not guess:
+                print_line(None, 'blank_input', 6, secondary_delay)
             elif len(guess) == 1:
-                if guess in guessedLetters:
-                    print_line(None, "guessed", 6, secondaryDelay)
-
+                if guess in guessed_letters:
+                    print_line(None, 'guessed', 6, secondary_delay)
                 elif guess.isdigit() or guess.isalpha():
                     if guess not in word.lower():
-                        plData["playerData"]["statistics"]["wrongGuesses"]["count"] += 1
-                        guessedLetters.append(guess)
+                        jsm.player_data['statistics']['wrongGuesses']['count'] += 1
+                        guessed_letters.append(guess)
                         attempts -= 1
-
-                        print_line(None, "incorrect", 4, primaryDelay)
-                    
+                        print_line(None, 'incorrect', 4, primary_delay)
                     else:
-                        plData["playerData"]["statistics"]["rightGuesses"]["count"] += 1
-                        guessedLetters.append(guess)
-
-                        print_line(None, "correct", "A", primaryDelay)
-
-                    plData["playerData"]["statistics"]["guessesMade"]["count"] += 1
-                    plData["playerData"]["statistics"]["charactersGuessed"]["count"] += 1
-                    writePlayerData(plData)
-
+                        jsm.player_data['statistics']['rightGuesses']['count'] += 1
+                        guessed_letters.append(guess)
+                        print_line(None, 'correct', 'A', primary_delay)
+                    jsm.player_data['statistics']['guessesMade']['count'] += 1
+                    jsm.player_data['statistics']['charactersGuessed']['count'] += 1
+                    jsm.write_json(jsm.player_data)
                 else:
-                    print_line(None, "only_letters", 6, secondaryDelay)
-
+                    print_line(None, 'only_letters', 6, secondary_delay)
             elif len(guess) == len(word):
-                if guess in guessedWords:
-                    print_line(None, "guessed", 6, secondaryDelay)
-
+                if guess in guessed_words:
+                    print_line(None, 'guessed', 6, secondary_delay)
                 else:
                     if guess == word.lower():
-                        plData["playerData"]["statistics"]["rightGuesses"]["count"] += 1
+                        jsm.player_data['statistics']['rightGuesses']['count'] += 1
                         correct = True
-
-                        print_line(None, "correct", "A", primaryDelay)
-                        
+                        print_line(None, 'correct', 'A', primary_delay)
                     else:
-                        plData["playerData"]["statistics"]["wrongGuesses"]["count"] += 1
-                        guessedWords.append(guess)
+                        jsm.player_data['statistics']['wrongGuesses']['count'] += 1
+                        guessed_words.append(guess)
                         attempts -= 1
-
-                        print_line(None, "incorrect", 4, primaryDelay)
-                
-                    plData["playerData"]["statistics"]["guessesMade"]["count"] += 1
-                    plData["playerData"]["statistics"]["wordsGuessed"]["count"] += 1
-                    writePlayerData(plData)
-
+                        print_line(None, 'incorrect', 4, primary_delay)
+                    jsm.player_data['statistics']['guessesMade']['count'] += 1
+                    jsm.player_data['statistics']['wordsGuessed']['count'] += 1
+                    jsm.write_json(jsm.player_data)
             else:
-                print_line(None, "wrong_amount", 6, secondaryDelay)
+                print_line(None, 'wrong_amount', 6, secondary_delay)
+    if correct is True:
+        jsm.player_data['statistics']['roundsWon']['count'] += 1
+        print_line(None, 'won_game', None, None)
+        print_line('The correct word was \''
+                   + word
+                   + '\'.',
+                   None,
+                   None,
+                   None
+                   )
     else:
-        if correct == True:
-            plData["playerData"]["statistics"]["roundsWon"]["count"] += 1
-
-            print_line(None, "won_game", None, None)
-            print_line("The correct word was \"" + word + "\".", None, None, None)
-        
-        else:
-            plData["playerData"]["statistics"]["roundsLost"]["count"] += 1
-
-            print_line(None, "lost_game", None, None)
-            print_line("The correct word would\'ve been \"" + word + "\".", None, None, None)
-
-        plData["playerData"]["statistics"]["roundsPlayed"]["count"] += 1
-        writePlayerData(plData)
-
-        replay()
+        jsm.player_data['statistics']['roundsLost']['count'] += 1
+        print_line(None, 'lost_game', None, None)
+        print_line(
+            'The correct word would\'ve been \''
+            + word
+            + '\'.',
+            None,
+            None,
+            None
+        )
+    jsm.player_data['statistics']['roundsPlayed']['count'] += 1
+    jsm.write_json(jsm.player_data)
+    replay(user_gamemode)
 
 
-def replay():
-    global currentFunction
-    currentFunction = _getframe().f_code.co_name
-
-    userReplay = print_line("Would you like to play again? (yes/no): ", None, None, None)
-
-    if userReplay in ["yes", "y"]:
-        print_line(None, "replay_pos", None, None)
-
-        play()
-
-    elif userReplay in ["no", "n"]:
-        print_line(None, "replay_neg", None, None)
-
-        _exit(0)
-
+def replay(user_gamemode):
+    user_replay = print_line(
+        'Would you like to play again? (yes/no): ',
+        None,
+        None,
+        None
+    )
+    if user_replay in ['yes', 'y']:
+        print_line(None, 'replay_pos', None, None)
+        play(user_gamemode)
+    elif user_replay in ['no', 'n']:
+        print_line(None, 'replay_neg', None, None)
+        exit()
     else:
-        print_line(None, "dont_know", None, None)
+        print_line(None, 'dont_know', None, None)
+        replay(user_gamemode)
 
-        replay()
 
-
-prologue()
+if __name__ == '__main__':
+    prologue()
